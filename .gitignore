@@ -1,0 +1,9 @@
+build/
+data/
+*.dltmp
+*.log
+.vscode/
+.idea/
+
+# 本地运行配置不入库（只提交 .example）
+downloader-v2/config/download_server.conf

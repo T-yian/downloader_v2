@@ -1,0 +1,2 @@
+# 统一 LF：本项目目标平台是 Linux，CRLF 会让 bash 脚本和部分工具直接报错
+* text=auto eol=lf
