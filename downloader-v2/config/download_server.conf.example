@@ -1,0 +1,52 @@
+# 下载器 v2 服务配置
+# 启动: ./build/download_server -c config/download_server.conf
+
+# ---- 接入层 ----
+listen_host = 0.0.0.0
+listen_port = 9090
+
+# ---- 存储 ----
+# save_path 的允许根目录；提交的相对路径自动拼到它下面
+storage_root = /data/dlsvc
+# 拒绝逃逸出 storage_root 的 save_path（防目录穿越）
+restrict_to_root = true
+
+# ---- 调度层（D1 外层 / D7 两级限流）----
+# 全局任务并发上限 = 线程池规模；这是磁盘 IO/带宽占用总量的第一道闸
+worker_count = 4
+# 阻塞队列容量（排队上限；满 → 提交返回 503 queue full）
+queue_capacity = 1024
+# 单用户并发上限（提交时刻检查；超限返回 429）
+max_active_per_user = 4
+
+# ---- 下载内核（D1 内层：任务内部还有分片并发）----
+# 总并发连接 ≈ worker_count × max_segments_per_task，规划容量时按这个乘积算
+max_segments_per_task = 8
+# 小于该值不分片（切了得不偿失）
+min_segment_size_mb = 8
+# 瞬时失败自动重试次数（4xx 除 408/429 不重试）
+max_retries = 3
+# 第 n 次重试退避 = n × retry_backoff_ms
+retry_backoff_ms = 1000
+curl_connect_timeout_s = 10
+# 低速看门狗：连续 stall_time_s 秒吞吐低于 stall_speed_bps 判为卡死，触发重试
+stall_speed_bps = 1024
+stall_time_s = 30
+
+# ---- 进度节流（D2）----
+# 节流窗口：每 1-5 秒落一次库；窗口 = 崩溃时最多丢失的秒数
+flush_interval_ms = 2000
+# 字节兜底：窗口内增量超过该值立即落库（大文件高带宽时降低丢失上限）
+flush_bytes_mb = 8
+
+# ---- MySQL ----
+mysql_host = 127.0.0.1
+mysql_port = 3306
+mysql_user = dlsvc
+mysql_password = dlsvc123
+mysql_db = downloader
+
+# ---- 日志 ----
+log_level = info
+# 空 = 输出到 stderr；填绝对路径则落文件
+log_file =
